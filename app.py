@@ -7,6 +7,18 @@ def get_profile_data(profile_url):
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
 
+        # Get highlights
+        highlights_container = soup.find('div', class_='arrange__09f24__LDfbs gutter-2__09f24__CCmUo layout-wrap__09f24__GEBlv layout-6-units__09f24__pP1H0 css-1qn0b6x')
+        highlights = []
+        if highlights_container:
+            spans = highlights_container.find_all('span', class_='mobile-text-medium__09f24__MZ1v6 css-1dtv2dz')
+            for span in spans:
+                highlight_text = span.get_text()
+                highlights.append(highlight_text)
+
+        if not highlights:
+            highlights = 'No'
+
         # Get pricing and availability
         buttons = soup.find_all('button', class_='css-1ru1z96')
         get_price = ''
@@ -64,13 +76,13 @@ def get_profile_data(profile_url):
             rate_text = rate_element.text.strip()
             # Extraer solo el valor numérico
             rate_value = float(rate_text.split()[0])
-            return rate_value, reviews, phone, web, get_price
+            return rate_value, reviews, phone, web, get_price, highlights
         else:
             print(f'Calificación no encontrada en la página del perfil: {profile_url}')
-            return None, None, None, None, None
+            return None, None, None, None, None, None
     else:
         print(f"No se pudo obtener la página del perfil. Código de estado: {response.status_code}")
-        return None, None, None, None, None
+        return None, None, None, None, None, None
     
 def get_business(url):
     # Hacer una solicitud HTTP a la página de Yelp
@@ -98,7 +110,7 @@ def get_business(url):
 
 
                 # Obtener la calificación y las reseñas del perfil
-                rate, reviews, phone, website, get_price = get_profile_data(full_url)
+                rate, reviews, phone, website, get_price, highlights = get_profile_data(full_url)
 
                 # Añadir el negocio a la lista solo si se obtuvo la calificación
                 if rate is not None:
@@ -106,6 +118,7 @@ def get_business(url):
                     last_3_reviews = reviews[-3:]
                     print(f'Name: {business_name_text}')
                     print(f'Get pricing and availability: {get_price}')
+                    print(f'Highlights: {highlights}')
                     print(f'Rate: {rate}')
                     print(f'Phone {phone}')
                     print(f'Website: {website}')
