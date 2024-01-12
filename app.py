@@ -124,6 +124,10 @@ def get_business(url):
                 response_time_element = business.find('span', {'class': ['raqResponseTime', 'raqFastResponder']})
                 response_time = response_time_element.text.strip() if response_time_element else 'No response time'
 
+                # Get verified licence
+                # Verificar si el negocio tiene una licencia verificada
+                verified_license_element = business.find('span', class_='css-11pkcdj')
+                has_verified_license = 'Yes' if verified_license_element and 'Verified License' in verified_license_element.text else 'No'
 
                 # Obtener la calificación y las reseñas del perfil
                 rate, reviews, phone, website, get_price, highlights, portfolio, logo = get_profile_data(full_url)
@@ -136,6 +140,7 @@ def get_business(url):
                     print(f'Get pricing and availability: {get_price}')
                     print(f'Logo: {logo}')
                     print(f'Portfolio: {portfolio}')
+                    print(f'Verified licence: {has_verified_license}')
                     print(f'Highlights: {highlights}')
                     print(f'Rate: {rate}')
                     print(f'Phone {phone}')

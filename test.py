@@ -6,16 +6,17 @@ def get_profile_highlights(profile_url):
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        logo_class = soup.find('img', class_='businessLogo__09f24__jydFo businessLogo--v2__09f24__MfF2g')
-        logo = 'No'
+        portfolios = soup.find_all('span', class_='css-11pkcdj')
+        portfolio = 'No'
 
-        if logo_class:
-            logo = 'Yes'
+        for item in portfolios[:5]:
+            if 'Verified License' in item.text:
+                portfolio = 'Yes'
+            else:
+                print(portfolio)
 
-        return logo
+        return portfolio
 
-url_yes = "https://www.yelp.com/biz/fix-it-quick-plumbing-canoga-park-2?override_cta=Get+pricing+%26+availability"
-url_not = "https://www.yelp.com/biz/tejedas-plumbing-rosemead?osq=plumbers&override_cta=Get+pricing+%26+availability"
+url_yes = "https://www.yelp.com/search?find_desc=plumbers&find_loc=Los+Angeles%2C+CA"
 
-print(f'Response Yes: {get_profile_highlights(url_yes)}')
-print(f'Response No: {get_profile_highlights(url_not)}')
+print(get_profile_highlights(url_yes))
