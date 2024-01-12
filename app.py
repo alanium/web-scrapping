@@ -7,6 +7,19 @@ def get_profile_data(profile_url):
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
 
+        # Get pricing and availability
+        buttons = soup.find_all('button', class_='css-1ru1z96')
+        get_price = ''
+        if buttons:
+            for button in buttons:
+                span_inside_button = button.find('span', class_='css-1enow5j')
+                if span_inside_button:
+                    get_price = 'Yes'
+                else:
+                    get_price = 'No'
+        else:
+            get_price = 'No'
+
         # Extraer la calificación desde el span con la clase 'css-1p9ibgf'
         rate_class = 'css-1p9ibgf'
         rate_element = soup.find('span', class_=rate_class)
@@ -51,13 +64,13 @@ def get_profile_data(profile_url):
             rate_text = rate_element.text.strip()
             # Extraer solo el valor numérico
             rate_value = float(rate_text.split()[0])
-            return rate_value, reviews, phone, web
+            return rate_value, reviews, phone, web, get_price
         else:
             print(f'Calificación no encontrada en la página del perfil: {profile_url}')
-            return None, None, None, None
+            return None, None, None, None, None
     else:
         print(f"No se pudo obtener la página del perfil. Código de estado: {response.status_code}")
-        return None, None, None, None
+        return None, None, None, None, None
     
 def get_business(url):
     # Hacer una solicitud HTTP a la página de Yelp
@@ -70,7 +83,7 @@ def get_business(url):
 
         businesses = soup.find_all('div', class_=business_container_class)
 
-        for business in businesses[:3]:
+        for business in businesses[:10]:
             # Extraer nombre del negocio
             business_name_element = business.find('a', class_='css-19v1rkv')
 
@@ -85,16 +98,18 @@ def get_business(url):
 
 
                 # Obtener la calificación y las reseñas del perfil
-                rate, reviews, phone, website = get_profile_data(full_url)
+                rate, reviews, phone, website, get_price = get_profile_data(full_url)
 
                 # Añadir el negocio a la lista solo si se obtuvo la calificación
                 if rate is not None:
                     # Imprimir solo las últimas 3 reseñas
                     last_3_reviews = reviews[-3:]
                     print(f'Name: {business_name_text}')
+                    print(f'Get pricing and availability: {get_price}')
                     print(f'Rate: {rate}')
                     print(f'Phone {phone}')
                     print(f'Website: {website}')
+                    print(f'Yelp URL: {full_url}')
                     print(f'Response Time: {response_time}')
                     print(f'Last 3 reviews:')
                     for review in last_3_reviews:
