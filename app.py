@@ -1,9 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
 
-def get_profile_data(url_perfil):
+def get_profile_data(profile_url):
     # Hacer una solicitud HTTP a la página del perfil de Yelp
-    response = requests.get(url_perfil)
+    response = requests.get(profile_url)
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
 
@@ -53,7 +53,7 @@ def get_profile_data(url_perfil):
             rate_value = float(rate_text.split()[0])
             return rate_value, reviews, phone, web
         else:
-            print(f'Calificación no encontrada en la página del perfil: {url_perfil}')
+            print(f'Calificación no encontrada en la página del perfil: {profile_url}')
             return None, None, None, None
     else:
         print(f"No se pudo obtener la página del perfil. Código de estado: {response.status_code}")
@@ -70,7 +70,7 @@ def get_business(url):
 
         businesses = soup.find_all('div', class_=business_container_class)
 
-        for business in businesses:
+        for business in businesses[:3]:
             # Extraer nombre del negocio
             business_name_element = business.find('a', class_='css-19v1rkv')
 
@@ -78,6 +78,11 @@ def get_business(url):
                 business_name_text = business_name_element.text.strip()
                 business_href = business_name_element['href']
                 full_url = 'https://www.yelp.com' + business_href
+
+                # Obtener el tiempo de respuesta
+                response_time_element = business.find('span', {'class': ['raqResponseTime', 'raqFastResponder']})
+                response_time = response_time_element.text.strip() if response_time_element else 'No response time'
+
 
                 # Obtener la calificación y las reseñas del perfil
                 rate, reviews, phone, website = get_profile_data(full_url)
@@ -90,13 +95,14 @@ def get_business(url):
                     print(f'Rate: {rate}')
                     print(f'Phone {phone}')
                     print(f'Website: {website}')
+                    print(f'Response Time: {response_time}')
                     print(f'Last 3 reviews:')
                     for review in last_3_reviews:
                         print(f'  - {review}')
                     print("=" * 50)
 
                     # Añadir el negocio a la lista
-                    negocios.append({'name': business_name_text, 'href': full_url, 'rate': rate, 'reviews': last_3_reviews})
+                    negocios.append({'name': business_name_text, 'href': full_url, 'rate': rate, 'reviews': last_3_reviews, 'response_time': response_time})
 
         return negocios
     else:
