@@ -7,6 +7,22 @@ def get_profile_data(profile_url):
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
 
+        # Get Logo
+        logo_class = soup.find('img', class_='businessLogo__09f24__jydFo businessLogo--v2__09f24__MfF2g')
+        logo = 'No'
+
+        if logo_class:
+            logo = 'Yes'
+
+        # Get portfolio
+        portfolios = soup.find_all('h2', class_='css-13merx8')
+        portfolio = 'No'
+
+        for item in portfolios:
+            if 'Portfolio from the Business' in item.text:
+                portfolio = 'Yes'
+                break
+
         # Get highlights
         highlights_container = soup.find('div', class_='arrange__09f24__LDfbs gutter-2__09f24__CCmUo layout-wrap__09f24__GEBlv layout-6-units__09f24__pP1H0 css-1qn0b6x')
         highlights = []
@@ -76,13 +92,13 @@ def get_profile_data(profile_url):
             rate_text = rate_element.text.strip()
             # Extraer solo el valor numérico
             rate_value = float(rate_text.split()[0])
-            return rate_value, reviews, phone, web, get_price, highlights
+            return rate_value, reviews, phone, web, get_price, highlights, portfolio, logo
         else:
             print(f'Calificación no encontrada en la página del perfil: {profile_url}')
-            return None, None, None, None, None, None
+            return None, None, None, None, None, None, None, None
     else:
         print(f"No se pudo obtener la página del perfil. Código de estado: {response.status_code}")
-        return None, None, None, None, None, None
+        return None, None, None, None, None, None, None, None
     
 def get_business(url):
     # Hacer una solicitud HTTP a la página de Yelp
@@ -110,7 +126,7 @@ def get_business(url):
 
 
                 # Obtener la calificación y las reseñas del perfil
-                rate, reviews, phone, website, get_price, highlights = get_profile_data(full_url)
+                rate, reviews, phone, website, get_price, highlights, portfolio, logo = get_profile_data(full_url)
 
                 # Añadir el negocio a la lista solo si se obtuvo la calificación
                 if rate is not None:
@@ -118,6 +134,8 @@ def get_business(url):
                     last_3_reviews = reviews[-3:]
                     print(f'Name: {business_name_text}')
                     print(f'Get pricing and availability: {get_price}')
+                    print(f'Logo: {logo}')
+                    print(f'Portfolio: {portfolio}')
                     print(f'Highlights: {highlights}')
                     print(f'Rate: {rate}')
                     print(f'Phone {phone}')
@@ -130,8 +148,19 @@ def get_business(url):
                     print("=" * 50)
 
                     # Añadir el negocio a la lista
-                    negocios.append({'name': business_name_text, 'href': full_url, 'rate': rate, 'reviews': last_3_reviews, 'response_time': response_time})
-
+                    negocios.append({
+                        'name': business_name_text,
+                        'href': full_url,
+                        'rate': rate,
+                        'logo': logo,
+                        'get_price': get_price,  # Añadir get_price
+                        'portfolio': portfolio,  # Añadir portfolio
+                        'highlights': highlights,  # Añadir highlights
+                        'phone': phone,
+                        'website': website,
+                        'response_time': response_time,
+                        'reviews': last_3_reviews
+                    })
         return negocios
     else:
         print(f"No se pudo obtener la página. Código de estado: {response.status_code}")
