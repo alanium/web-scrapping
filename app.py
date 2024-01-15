@@ -1,8 +1,10 @@
 from bs4 import BeautifulSoup
 from flask import Flask, request, render_template
 import requests
+from geopy.distance import geodesic
 
 app = Flask(__name__)
+
 
 def get_profile_data(profile_url):
     response = requests.get(profile_url)
@@ -49,7 +51,21 @@ def get_profile_data(profile_url):
     else:
         return None, None, None, None
 
-def get_yelp_businesses(api_key, location, category, limit):
+def calculate_distance(user_location, business_location, decimals=2):
+    user_latitude, user_longitude = user_location
+    business_latitude, business_longitude = business_location
+    user_coords = (user_latitude, user_longitude)
+    business_coords = (business_latitude, business_longitude)
+    
+    # Calcular la distancia con geodesic
+    distance_in_km = geodesic(user_coords, business_coords).kilometers
+    
+    # Redondear la distancia al número de decimales especificado
+    rounded_distance = round(distance_in_km, decimals)
+    
+    return rounded_distance
+
+def get_yelp_businesses(api_key, location, category, limit, user_location):
     # Reemplazar espacios con %20 en la ubicación
     location = location.replace(' ', '%20')
 
@@ -64,8 +80,11 @@ def get_yelp_businesses(api_key, location, category, limit):
     businesses_data = []
 
     if response.status_code == 200:
-        businesses = response.json()['businesses']
-        for business in businesses:
+        user_latitude, user_longitude = user_location
+        region_info = response.json()['region']
+        latitude, longitude = region_info['center']['latitude'], region_info['center']['longitude']
+
+        for business in response.json()['businesses']:
             business_info = {
                 "ID": business['id'],
                 "Name": business['name'],
@@ -76,9 +95,11 @@ def get_yelp_businesses(api_key, location, category, limit):
                 "Rating": business['rating'],
                 "Phone": business['phone'],
                 "Display Phone": business['display_phone'],
-                "Distance": business['distance'],
                 "Transactions": business['transactions'],
-                "Display Address": business['location']['display_address']
+                "Display Address": business['location']['display_address'],
+                "Latitude": latitude,
+                "Longitude": longitude,
+                "Distance": calculate_distance((user_latitude, user_longitude), (latitude, longitude))
             }
 
             # Obtener información adicional del perfil
@@ -106,11 +127,21 @@ def index():
 def search_yelp_businesses():
     api_key = 'K1wxqUgzSkaPZML_34DUhvfawKSiQ75gKOiIqmL2W2bptLSYFNFKcMGZxajbKhs1SS5tq-hD0B9wmq9GkYnzZW36Gxmfwh9nyc4sN1MqDQJA3IDKl-eg2gN-vUmlZXYx'
 
-    location = request.form.get('location', '')
+    # Obtener la ubicación del usuario desde el formulario
+    user_location = request.form.get('user_location', '')
+    if not user_location:
+        return "Error: User location is missing."
+
+    # Obtener la ubicación del usuario como una tupla de latitud y longitud
+    user_location = tuple(map(float, user_location.split(',')))
+
     category = request.form.get('category', '')
+    location = request.form.get('location', '')
     limit = int(request.form.get('limit', 5))
 
-    result = get_yelp_businesses(api_key, location, category, limit)
+    # user_location = (34.0522, -118.2437)
+
+    result = get_yelp_businesses(api_key, location, category, limit, user_location)
 
     return render_template('result.html', result=result)
 
