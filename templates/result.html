@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results</title>
+</head>
+<body>
+    <h1>Search Results</h1>
+    
+    {% if result %}
+        <ul>
+            {% for business in result %}
+                <li>
+                    <strong>{{ business['Name'] }}</strong> - Rating: {{ business['Rating'] }}
+                    <br>
+                    {% if business['Image URL'] %}
+                        Logo: YES
+                        <br>
+                    {% endif %}
+                    Review Count: {{ business['Review Count'] }}
+                    <br>
+                    Phone: {{ business['Phone'] }}
+                    <br>
+                    Distance: {{ business['Distance']|round }} km
+                    <br>
+                    {% if business['Transactions'] %}
+                        Transactions: {{ ', '.join(business['Transactions']) }}
+                        <br>
+                    {% endif %}
+                    {% if business['Profile Info']['Last 3 Reviews'] %}
+                        Reviews:
+                        <ul>
+                            {% for review in business['Profile Info']['Last 3 Reviews'] %}
+                                <li>
+                                    {{ review['text'] }} - Date: {{ review['date'] }}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        Reviews: NO
+                        <br>
+                    {% endif %}
+                    <em>{{ business['Display Address'] }}</em>
+                    <br>
+                    <a href="{{ business['URL'] }}" target="_blank">View Profile</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No results found.</p>
+    {% endif %}
+</body>
+</html>
