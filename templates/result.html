@@ -20,8 +20,6 @@
                     {% endif %}
                     Review Count: {{ business['Review Count'] }}
                     <br>
-                    Website: {{ ['Profile Info']['web'] }}
-                    <br>
                     Phone: {{ business['Phone'] }}
                     <br>
                     Distance: {{ business['Distance']|round }} km
@@ -35,6 +33,10 @@
                         <br>
                     {% else %}
                         Get Price: NO
+                        <br>
+                    {% endif %}
+                    {% if business['Profile Info']['Website'] %}
+                        Website: {{ business['Profile Info']['Website'] }}
                         <br>
                     {% endif %}
                     {% if business['Profile Info']['Portfolio'] == 'Yes' %}
