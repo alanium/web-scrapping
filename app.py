@@ -26,11 +26,28 @@ def get_profile_data(profile_url):
             last_3_reviews = reviews[-3:]
         else:
             last_3_reviews = []
+
+
+        #web
+        web_class = 'arrange__09f24__LDfbs gutter-2__09f24__CCmUo vertical-align-middle__09f24__zU9sE css-1qn0b6x'
+        web_element = soup.find_all('div', class_=web_class)
+
+        web_found = False
+        web = None
+
+        for element in web_element:
+            text_element = element.find('p', class_='css-1p9ibgf')
+            if text_element:
+                text = text_element.text.strip()
+                if not web_found:
+                    web = text
+                    web_found = True
+                    break
         
-        return get_price, portfolio, last_3_reviews
+        return get_price, portfolio, last_3_reviews, web
         
     else:
-        return None, None, None
+        return None, None, None, None
 
 def get_yelp_businesses(api_key, location, category, limit):
     # Reemplazar espacios con %20 en la ubicación
@@ -65,10 +82,11 @@ def get_yelp_businesses(api_key, location, category, limit):
             }
 
             # Obtener información adicional del perfil
-            get_price, portfolio, last_3_reviews = get_profile_data(business_info["URL"])
+            get_price, portfolio, last_3_reviews, web = get_profile_data(business_info["URL"])
             business_info["Profile Info"] = {
                 "Get Price": get_price,
                 "Portfolio": portfolio,
+                "Website" : web,
                 "Last 3 Reviews": last_3_reviews
             }
 
