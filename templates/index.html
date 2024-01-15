@@ -5,23 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yelp Business Search</title>
     <script>
-        function getLocation() {
+        document.addEventListener('DOMContentLoaded', function() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(showPosition);
             } else {
                 alert("Geolocation is not supported by this browser.");
             }
-        }
 
-        function showPosition(position) {
-            document.getElementById("user_location").value = position.coords.latitude + "," + position.coords.longitude;
-        }
+            function showPosition(position) {
+                document.getElementById('user_latitude').value = position.coords.latitude;
+                document.getElementById('user_longitude').value = position.coords.longitude;
+            }
+        });
     </script>
 </head>
 <body>
     <h1>Yelp Business Search</h1>
     
-    <form method="post" action="/search" onsubmit="getLocation()">
+    <form method="post" action="/search">
         <label for="location">Location:</label>
         <input type="text" id="location" name="location" required><br>
 
@@ -31,8 +32,9 @@
         <label for="limit">Limit:</label>
         <input type="number" id="limit" name="limit" required><br>
 
-        <!-- Agregar un campo oculto para almacenar la ubicación del usuario -->
-        <input type="hidden" id="user_location" name="user_location" value="">
+        <!-- Campos ocultos para latitud y longitud -->
+        <input type="hidden" id="user_latitude" name="user_latitude">
+        <input type="hidden" id="user_longitude" name="user_longitude">
 
         <button type="submit">Search</button>
     </form>

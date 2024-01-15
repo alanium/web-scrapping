@@ -127,20 +127,14 @@ def index():
 def search_yelp_businesses():
     api_key = 'K1wxqUgzSkaPZML_34DUhvfawKSiQ75gKOiIqmL2W2bptLSYFNFKcMGZxajbKhs1SS5tq-hD0B9wmq9GkYnzZW36Gxmfwh9nyc4sN1MqDQJA3IDKl-eg2gN-vUmlZXYx'
 
-    # Obtener la ubicación del usuario desde el formulario
     user_location = request.form.get('user_location', '')
-    if not user_location:
-        return "Error: User location is missing."
-
-    # Obtener la ubicación del usuario como una tupla de latitud y longitud
-    user_location = tuple(map(float, user_location.split(',')))
-
     category = request.form.get('category', '')
     location = request.form.get('location', '')
     limit = int(request.form.get('limit', 5))
 
-    # Si prefieres usar una ubicación de prueba, puedes descomentar la siguiente línea:
-    # user_location = (34.0522, -118.2437)
+    #user_location = (34.0522, -118.2437)
+    user_location = (float(request.form.get('user_latitude', 0)), float(request.form.get('user_longitude', 0)))
+
 
     result = get_yelp_businesses(api_key, location, category, limit, user_location)
 
