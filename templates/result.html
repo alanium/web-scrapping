@@ -28,6 +28,20 @@
                         Transactions: {{ ', '.join(business['Transactions']) }}
                         <br>
                     {% endif %}
+                    {% if business['Profile Info']['Get Price'] == 'Yes' %}
+                        Get Price: YES
+                        <br>
+                    {% else %}
+                        Get Price: NO
+                        <br>
+                    {% endif %}
+                    {% if business['Profile Info']['Portfolio'] == 'Yes' %}
+                        Portfolio: YES
+                        <br>
+                    {% else %}
+                        Portfolio: NO
+                        <br>
+                    {% endif %}
                     {% if business['Profile Info']['Last 3 Reviews'] %}
                         Reviews:
                         <ul>
