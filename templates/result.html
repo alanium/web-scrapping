@@ -4,69 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" type="text/css" href="static/styles.css">
-
     <title>Search Results</title>
 </head>
 <body>
     <h1>Search Results</h1>
     
     {% if result %}
-        <ul>
-            {% for business in result %}
-                <li>
-                    <strong>{{ business['Name'] }}</strong> - Rating: {{ business['Rating'] }}
+        {% for business in result %}
+            <div class="card">
+                <strong>{{ business['Name'] }}</strong> - Rating: {{ business['Rating'] }}
+                <br>
+                {% if business['Image URL'] %}
+                    Logo: YES
                     <br>
-                    {% if business['Image URL'] %}
-                        Logo: YES
-                        <br>
-                    {% endif %}
-                    Review Count: {{ business['Review Count'] }}
+                {% endif %}
+                Review Count: {{ business['Review Count'] }}
+                <br>
+                Phone: {{ business['Phone'] }}
+                <br>
+                Distance: {{ business['Distance'] }} km
+                <br>
+                {% if business['Transactions'] %}
+                    Transactions: {{ ', '.join(business['Transactions']) }}
                     <br>
-                    Phone: {{ business['Phone'] }}
+                {% endif %}
+                {% if business['Profile Info']['Get Price'] == 'Yes' %}
+                    Get Price: YES
                     <br>
-                    Distance: {{ business['Distance'] }} km
+                {% else %}
+                    Get Price: NO
                     <br>
-                    {% if business['Transactions'] %}
-                        Transactions: {{ ', '.join(business['Transactions']) }}
-                        <br>
-                    {% endif %}
-                    {% if business['Profile Info']['Get Price'] == 'Yes' %}
-                        Get Price: YES
-                        <br>
-                    {% else %}
-                        Get Price: NO
-                        <br>
-                    {% endif %}
-                    {% if business['Profile Info']['Website'] %}
-                        Website: {{ business['Profile Info']['Website'] }}
-                        <br>
-                    {% endif %}
-                    {% if business['Profile Info']['Portfolio'] == 'Yes' %}
-                        Portfolio: YES
-                        <br>
-                    {% else %}
-                        Portfolio: NO
-                        <br>
-                    {% endif %}
-                    {% if business['Profile Info']['Last 3 Reviews'] %}
-                        Reviews:
-                        <ul>
-                            {% for review in business['Profile Info']['Last 3 Reviews'] %}
-                                <li>
-                                    {{ review['text'] }} - Date: {{ review['date'] }}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        Reviews: NO
-                        <br>
-                    {% endif %}
-                    <em>{{ business['Display Address'] }}</em>
+                {% endif %}
+                {% if business['Profile Info']['Website'] %}
+                    Website: <a href="{{ business['Profile Info']['Website'] }}" target="_blank">{{ business['Profile Info']['Website'] }}</a>
                     <br>
-                    <a href="{{ business['URL'] }}" target="_blank">View Profile</a>
-                </li>
-            {% endfor %}
-        </ul>
+                {% endif %}
+
+                {% if business['Profile Info']['Portfolio'] == 'Yes' %}
+                    Portfolio: YES
+                    <br>
+                {% else %}
+                    Portfolio: NO
+                    <br>
+                {% endif %}
+                {% if business['Profile Info']['Last 3 Reviews'] %}
+                    Reviews:
+                    <ul>
+                        {% for review in business['Profile Info']['Last 3 Reviews'] %}
+                            <li>
+                                {{ review['text'] }} - Date: {{ review['date'] }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    Reviews: NO
+                    <br>
+                {% endif %}
+                <em>{{ business['Display Address'] }}</em>
+                <br>
+                <a href="{{ business['URL'] }}" target="_blank">View Profile</a>
+            </div>
+        {% endfor %}
     {% else %}
         <p>No results found.</p>
     {% endif %}
