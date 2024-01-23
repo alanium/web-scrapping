@@ -1,11 +1,12 @@
 from bs4 import BeautifulSoup
-from flask import Flask, request, render_template
 import requests
-from geopy.distance import geodesic
+import pandas as pd
+from urllib.parse import unquote
+from tqdm import tqdm
+import os
 
-app = Flask(__name__)
 
-
+# Data
 def get_profile_data(profile_url):
     response = requests.get(profile_url)
     if response.status_code == 200:
@@ -51,94 +52,122 @@ def get_profile_data(profile_url):
     else:
         return None, None, None, None
 
-def calculate_distance(user_location, business_location, decimals=2):
-    user_latitude, user_longitude = user_location
-    business_latitude, business_longitude = business_location
-    user_coords = (user_latitude, user_longitude)
-    business_coords = (business_latitude, business_longitude)
-    
-    # Calcular la distancia con geodesic
-    distance_in_km = geodesic(user_coords, business_coords).kilometers
-    
-    # Redondear la distancia al número de decimales especificado
-    rounded_distance = round(distance_in_km, decimals)
-    
-    return rounded_distance
+# Controller
+def save_to_excel(data, filename='business_data.xlsx'):
 
-def get_yelp_businesses(api_key, location, category, limit, user_location):
-    # Reemplazar espacios con %20 en la ubicación
-    location = location.replace(' ', '%20')
+    if os.path.exists(filename):
+        os.remove(filename)
 
-    url = f'https://api.yelp.com/v3/businesses/search?location={location}&term={category}&categories={category}&sort_by=best_match&limit={limit}'
-    headers = {
-        'Authorization': f'Bearer {api_key}',
-        'Accept': 'application/json'
-    }
+    # Crear un DataFrame con las columnas deseadas
+    columns = ["Name", "URL", "Rating", "Phone", "Display Phone", "Display Address",
+               "Get Price", "Portfolio", "Website", "Review 1", "Review 1 Date",
+               "Review 2", "Review 2 Date", "Review 3", "Review 3 Date", "City"]
+    df = pd.DataFrame(columns=columns)
 
-    response = requests.get(url, headers=headers)
+    rows_data = []  # Lista para almacenar todas las filas
 
-    businesses_data = []
+    for business_info in data:
+        row_data = {
+            "Name": business_info.get("Name", ""),
+            "URL": business_info.get("URL", ""),
+            "Rating": business_info.get("Rating", ""),
+            "Phone": business_info.get("Phone", ""),
+            "Display Phone": business_info.get("Display Phone", ""),
+            "Display Address": ", ".join(business_info.get("Display Address", [])),
+            "Get Price": business_info.get("Profile Info", {}).get("Get Price", ""),
+            "Portfolio": business_info.get("Profile Info", {}).get("Portfolio", ""),
+            "Website": business_info.get("Profile Info", {}).get("Website", ""),
+            "City": unquote(business_info.get("city", ""))
+        }
 
-    if response.status_code == 200:
-        user_latitude, user_longitude = user_location
-        region_info = response.json()['region']
-        latitude, longitude = region_info['center']['latitude'], region_info['center']['longitude']
+        # Obtener las últimas 3 revisiones
+        last_3_reviews = business_info.get("Profile Info", {}).get("Last 3 Reviews", [])
+        for i, review in enumerate(last_3_reviews, start=1):
+            row_data[f"Review {i}"] = review.get("text", "")
+            row_data[f"Review {i} Date"] = review.get("date", "")
 
-        for business in response.json()['businesses']:
-            business_info = {
-                "ID": business['id'],
-                "Name": business['name'],
-                "Alias": business['alias'],
-                "Image URL": business['image_url'],
-                "URL": business['url'],
-                "Review Count": business['review_count'],
-                "Rating": business['rating'],
-                "Phone": business['phone'],
-                "Display Phone": business['display_phone'],
-                "Transactions": business['transactions'],
-                "Display Address": business['location']['display_address'],
-                "Latitude": latitude,
-                "Longitude": longitude,
-                "Distance": calculate_distance((user_latitude, user_longitude), (latitude, longitude))
-            }
+        # Verificar si la fila tiene algún valor nulo o vacío
+        if not any(pd.isna(value) or value == "" for value in row_data.values()):
+            rows_data.append(row_data)
 
-            # Obtener información adicional del perfil
-            get_price, portfolio, last_3_reviews, web = get_profile_data(business_info["URL"])
-            business_info["Profile Info"] = {
-                "Get Price": get_price,
-                "Portfolio": portfolio,
-                "Website" : web,
-                "Last 3 Reviews": last_3_reviews
-            }
+    # Añadir todas las filas al DataFrame de una vez
+    df = pd.concat([df, pd.DataFrame(rows_data)], ignore_index=True)
 
-            businesses_data.append(business_info)
+    # Guardar en Excel
+    df.to_excel(filename, index=False)
 
-    else:
-        print(f"Error: {response.status_code}")
+def get_yelp_businesses(api_key, locations, category, limit):
+    all_businesses_data = []
 
-    return businesses_data
+    offset = 0
 
+    for location in tqdm(locations, desc='Processing locations', unit='location'):
+        # Reemplazar espacios con %20 en la ubicación
+        location = location.replace(' ', '%20')
 
-@app.route('/', methods=['GET'])
-def index():
-    return render_template('index.html')
+        url = f'https://api.yelp.com/v3/businesses/search?location={location}&term={category}&categories={category}&sort_by=best_match&limit={limit}&offset={offset}'
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Accept': 'application/json'
+        }
 
-@app.route('/search', methods=['POST'])
-def search_yelp_businesses():
+        response = requests.get(url, headers=headers)
+
+        businesses_data = []
+
+        if response.status_code == 200:
+            region_info = response.json()['region']
+            latitude, longitude = region_info['center']['latitude'], region_info['center']['longitude']
+
+            for business in tqdm(response.json()['businesses'], desc=f'Processing businesses in {location}', unit='business'):
+                business_info = {
+                    "ID": business['id'],
+                    "Name": business['name'],
+                    "Alias": business['alias'],
+                    "Image URL": business['image_url'],
+                    "URL": business['url'],
+                    "Review Count": business['review_count'],
+                    "Rating": business['rating'],
+                    "Phone": business['phone'],
+                    "Display Phone": business['display_phone'],
+                    "Transactions": business['transactions'],
+                    "Display Address": business['location']['display_address'],
+                    "Latitude": latitude,
+                    "Longitude": longitude,
+                    "city": location  # Agregar la clave 'city' con el valor de la ubicación actual
+                }
+
+                # Obtener información adicional del perfil
+                get_price, portfolio, last_3_reviews, web = get_profile_data(business_info["URL"])
+                business_info["Profile Info"] = {
+                    "Get Price": get_price,
+                    "Portfolio": portfolio,
+                    "Website" : web,
+                    "Last 3 Reviews": last_3_reviews
+                }
+
+                businesses_data.append(business_info)
+
+        else:
+            print(f"Error: {response.status_code}")
+
+        all_businesses_data.extend(businesses_data)
+
+    return all_businesses_data
+
+def main():
     api_key = 'K1wxqUgzSkaPZML_34DUhvfawKSiQ75gKOiIqmL2W2bptLSYFNFKcMGZxajbKhs1SS5tq-hD0B9wmq9GkYnzZW36Gxmfwh9nyc4sN1MqDQJA3IDKl-eg2gN-vUmlZXYx'
 
-    user_location = request.form.get('user_location', '')
-    category = request.form.get('category', '')
-    location = request.form.get('location', '')
-    limit = int(request.form.get('limit', 5))
+    categories = 'Plumber'
+    #locations = ['Los Angeles', 'Miami', 'Dallas', 'Houston', 'Austin', 'Sacramento', 'San Francisco', 'San Diego', 'Tampa', 'Chicago']
+    locations = ['Los Angeles']
 
-    #user_location = (34.0522, -118.2437)
-    user_location = (float(request.form.get('user_latitude', 0)), float(request.form.get('user_longitude', 0)))
+    limit = 51
 
+    result = get_yelp_businesses(api_key, locations, categories, limit)
 
-    result = get_yelp_businesses(api_key, location, category, limit, user_location)
-
-    return render_template('result.html', result=result)
+    # Guardar en Excel
+    save_to_excel(result)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    main()
