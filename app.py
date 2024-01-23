@@ -176,7 +176,6 @@ def main():
     limit = 100
 
     result = get_yelp_businesses(api_key, locations, categories, limit)
-
     # Guardar en Excel
     save_to_excel(result)
 
