@@ -100,63 +100,81 @@ def get_yelp_businesses(api_key, locations, category, limit):
         # Reemplazar espacios con %20 en la ubicación
         location = location.replace(' ', '%20')
 
-        url = f'https://api.yelp.com/v3/businesses/search?location={location}&term={category}&categories={category}&sort_by=best_match&limit={limit}'
-        headers = {
-            'Authorization': f'Bearer {api_key}',
-            'Accept': 'application/json'
-        }
+        offset = 0
+        location_limit = limit  # Usar una variable diferente para cada ubicación
 
-        response = requests.get(url, headers=headers)
+        while location_limit > 0:
+            # Ajustar el límite y el offset para no exceder el límite de la API
+            current_limit = min(location_limit, 50)
+            location_limit -= current_limit
 
-        businesses_data = []
+            url = f'https://api.yelp.com/v3/businesses/search?location={location}&term={category}&categories={category}&sort_by=best_match&limit={current_limit}&offset={offset}'
+            headers = {
+                'Authorization': f'Bearer {api_key}',
+                'Accept': 'application/json'
+            }
 
-        if response.status_code == 200:
-            region_info = response.json()['region']
-            latitude, longitude = region_info['center']['latitude'], region_info['center']['longitude']
+            response = requests.get(url, headers=headers)
 
-            for business in tqdm(response.json()['businesses'], desc=f'Processing businesses in {location}', unit='business'):
-                business_info = {
-                    "ID": business['id'],
-                    "Name": business['name'],
-                    "Alias": business['alias'],
-                    "Image URL": business['image_url'],
-                    "URL": business['url'],
-                    "Review Count": business['review_count'],
-                    "Rating": business['rating'],
-                    "Phone": business['phone'],
-                    "Display Phone": business['display_phone'],
-                    "Transactions": business['transactions'],
-                    "Display Address": business['location']['display_address'],
-                    "Latitude": latitude,
-                    "Longitude": longitude,
-                    "city": location  # Agregar la clave 'city' con el valor de la ubicación actual
-                }
+            businesses_data = []
 
-                # Obtener información adicional del perfil
-                get_price, portfolio, last_3_reviews, web = get_profile_data(business_info["URL"])
-                business_info["Profile Info"] = {
-                    "Get Price": get_price,
-                    "Portfolio": portfolio,
-                    "Website" : web,
-                    "Last 3 Reviews": last_3_reviews
-                }
+            if response.status_code == 200:
+                region_info = response.json()['region']
+                latitude, longitude = region_info['center']['latitude'], region_info['center']['longitude']
 
-                businesses_data.append(business_info)
+                for business in tqdm(response.json()['businesses'], desc=f'Processing businesses in {location}', unit='business'):
+                    business_info = {
+                        "ID": business['id'],
+                        "Name": business['name'],
+                        "Alias": business['alias'],
+                        "Image URL": business['image_url'],
+                        "URL": business['url'],
+                        "Review Count": business['review_count'],
+                        "Rating": business['rating'],
+                        "Phone": business['phone'],
+                        "Display Phone": business['display_phone'],
+                        "Transactions": business['transactions'],
+                        "Display Address": business['location']['display_address'],
+                        "Latitude": latitude,
+                        "Longitude": longitude,
+                        "city": location  # Agregar la clave 'city' con el valor de la ubicación actual
+                    }
 
-        else:
-            print(f"Error: {response.status_code}")
+                    # Obtener información adicional del perfil
+                    get_price, portfolio, last_3_reviews, web = get_profile_data(business_info["URL"])
+                    business_info["Profile Info"] = {
+                        "Get Price": get_price,
+                        "Portfolio": portfolio,
+                        "Website": web,
+                        "Last 3 Reviews": last_3_reviews
+                    }
 
-        all_businesses_data.extend(businesses_data)
+                    businesses_data.append(business_info)
+
+                if len(businesses_data) < current_limit:
+                    # Si hay menos de "current_limit" resultados, no hay más resultados para obtener
+                    break
+                else:
+                    # Si hay "current_limit" resultados, incrementar el offset para obtener los siguientes "current_limit"
+                    offset += current_limit
+
+            else:
+                print(f"Error: {response.status_code}")
+                break
+
+            all_businesses_data.extend(businesses_data)
 
     return all_businesses_data
+
+
 
 def main():
     api_key = 'K1wxqUgzSkaPZML_34DUhvfawKSiQ75gKOiIqmL2W2bptLSYFNFKcMGZxajbKhs1SS5tq-hD0B9wmq9GkYnzZW36Gxmfwh9nyc4sN1MqDQJA3IDKl-eg2gN-vUmlZXYx'
 
     categories = 'Plumber'
     #locations = ['Los Angeles', 'Miami', 'Dallas', 'Houston', 'Austin', 'Sacramento', 'San Francisco', 'San Diego', 'Tampa', 'Chicago']
-    locations = ['Los Angeles']
-    limit = 2
+    locations = ['Los Angeles', 'Miami', 'Dallas']
+    limit = 100
 
     result = get_yelp_businesses(api_key, locations, categories, limit)
 
