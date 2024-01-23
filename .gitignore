@@ -1,5 +1,7 @@
 env/
 __pycache__/
 
+business_data.xlsx
+
 # credentials
 config.json

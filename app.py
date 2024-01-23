@@ -50,11 +50,10 @@ def get_profile_data(profile_url):
         return get_price, portfolio, last_3_reviews, web
         
     else:
-        return None, None, None, None
+        return None, None, [], None
 
 # Controller
 def save_to_excel(data, filename='business_data.xlsx'):
-
     if os.path.exists(filename):
         os.remove(filename)
 
@@ -77,7 +76,7 @@ def save_to_excel(data, filename='business_data.xlsx'):
             "Get Price": business_info.get("Profile Info", {}).get("Get Price", ""),
             "Portfolio": business_info.get("Profile Info", {}).get("Portfolio", ""),
             "Website": business_info.get("Profile Info", {}).get("Website", ""),
-            "City": unquote(business_info.get("city", ""))
+            "City": unquote(business_info.get("city", "")).replace("%20", " ")
         }
 
         # Obtener las últimas 3 revisiones
@@ -86,9 +85,7 @@ def save_to_excel(data, filename='business_data.xlsx'):
             row_data[f"Review {i}"] = review.get("text", "")
             row_data[f"Review {i} Date"] = review.get("date", "")
 
-        # Verificar si la fila tiene algún valor nulo o vacío
-        if not any(pd.isna(value) or value == "" for value in row_data.values()):
-            rows_data.append(row_data)
+        rows_data.append(row_data)
 
     # Añadir todas las filas al DataFrame de una vez
     df = pd.concat([df, pd.DataFrame(rows_data)], ignore_index=True)
@@ -99,13 +96,11 @@ def save_to_excel(data, filename='business_data.xlsx'):
 def get_yelp_businesses(api_key, locations, category, limit):
     all_businesses_data = []
 
-    offset = 0
-
     for location in tqdm(locations, desc='Processing locations', unit='location'):
         # Reemplazar espacios con %20 en la ubicación
         location = location.replace(' ', '%20')
 
-        url = f'https://api.yelp.com/v3/businesses/search?location={location}&term={category}&categories={category}&sort_by=best_match&limit={limit}&offset={offset}'
+        url = f'https://api.yelp.com/v3/businesses/search?location={location}&term={category}&categories={category}&sort_by=best_match&limit={limit}'
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Accept': 'application/json'
@@ -161,8 +156,7 @@ def main():
     categories = 'Plumber'
     #locations = ['Los Angeles', 'Miami', 'Dallas', 'Houston', 'Austin', 'Sacramento', 'San Francisco', 'San Diego', 'Tampa', 'Chicago']
     locations = ['Los Angeles']
-
-    limit = 51
+    limit = 2
 
     result = get_yelp_businesses(api_key, locations, categories, limit)
 
