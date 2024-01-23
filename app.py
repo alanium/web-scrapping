@@ -172,8 +172,7 @@ def main():
     api_key = 'K1wxqUgzSkaPZML_34DUhvfawKSiQ75gKOiIqmL2W2bptLSYFNFKcMGZxajbKhs1SS5tq-hD0B9wmq9GkYnzZW36Gxmfwh9nyc4sN1MqDQJA3IDKl-eg2gN-vUmlZXYx'
 
     categories = 'Plumber'
-    #locations = ['Los Angeles', 'Miami', 'Dallas', 'Houston', 'Austin', 'Sacramento', 'San Francisco', 'San Diego', 'Tampa', 'Chicago']
-    locations = ['Los Angeles', 'Miami', 'Dallas']
+    locations = ['Los Angeles', 'Miami', 'Dallas', 'Houston', 'Austin', 'Sacramento', 'San Francisco', 'San Diego', 'Tampa', 'Chicago']
     limit = 100
 
     result = get_yelp_businesses(api_key, locations, categories, limit)
